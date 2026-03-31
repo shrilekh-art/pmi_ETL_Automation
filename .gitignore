@@ -1,8 +1,47 @@
-venv/
+# 🔹 Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# 🔹 Virtual environments
+venv/
+venv311/
+env/
+.venv/
+
+# 🔹 Environment variables
 .env
-.DS_Store
-.idea/
-.vscode/
 *.env
+
+# 🔹 Logs
+*.log
+
+# 🔹 Pytest
+.pytest_cache/
+
+# 🔹 Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# 🔹 Build / distribution
+build/
+dist/
+*.egg-info/
+
+# 🔹 IDE / Editor
+.vscode/
+.idea/
+
+# 🔹 OS files
+.DS_Store
+Thumbs.db
+
+# 🔹 Jupyter (if used)
+.ipynb_checkpoints/
+
+# 🔹 Spark / temp (important for ETL)
+*.crc
+_metastore/
+spark-warehouse/
