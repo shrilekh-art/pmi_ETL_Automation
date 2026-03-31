@@ -1,0 +1,7 @@
+{
+  "pipeline_name": "policy_pipeline",
+  "source": "data/source/policy.csv",
+  "target": "data/raw/policy.csv",
+  "validations": ["row_count", "null_check"]
+}
+
