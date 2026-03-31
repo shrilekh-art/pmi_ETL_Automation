@@ -1,7 +1,7 @@
 {
   "pipeline_name": "policy_pipeline",
-  "source": "data/source/policy.csv",
-  "target": "data/raw/policy.csv",
+  "source_dir": "data/source",
+  "landing_dir": "data/raw",
+  "file_pattern": "policy_*.csv",
   "validations": ["row_count", "null_check"]
 }
-
