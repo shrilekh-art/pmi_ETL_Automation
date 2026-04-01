@@ -1,6 +1,7 @@
 from pyspark.sql.functions import col, when
 from framework.spark_session import get_spark_session
 from framework.logger import get_logger
+from framework.error_handler import handle_error
 import os
 import pandas as pd
 
@@ -13,23 +14,22 @@ CURATED_PATH = os.path.join(BASE_DIR, "data", "curated", "policy")
 
 
 def process_curated_data():
-    logger.info("Starting curated layer pipeline...")
 
     try:
+        logger.info("Starting curated pipeline")
+
         spark = get_spark_session()
 
-        #  STEP 1 — READ USING PANDAS (NO HADOOP DEPENDENCY)
+        # READ USING PANDAS
         input_file = os.path.join(STAGING_PATH, "policy_output.csv")
 
-        logger.info(f"Reading staging file (Pandas): {input_file}")
+        logger.info(f"Reading staging file: {input_file}")
 
         if not os.path.exists(input_file):
-            logger.error(f"Input file not found: {input_file}")
-            return
+            raise FileNotFoundError(f"Input file not found: {input_file}")
 
         pdf = pd.read_csv(input_file)
 
-        #  STEP 2 — CONVERT TO SPARK DF
         df = spark.createDataFrame(pdf)
 
         logger.info(f"Initial Row Count: {df.count()}")
@@ -37,12 +37,12 @@ def process_curated_data():
         df.show()
         df.printSchema()
 
-        #  ================= BUSINESS LOGIC =================
+        # BUSINESS LOGIC
 
-        # 1. Commission Calculation (10%)
+        # Commission
         df = df.withColumn("commission", col("premium") * 0.10)
 
-        # 2. Policy Status Mapping
+        # Status Mapping
         df = df.withColumn(
             "policy_status",
             when(col("status") == "ACTIVE", "INFORCE")
@@ -51,7 +51,7 @@ def process_curated_data():
             .otherwise("UNKNOWN")
         )
 
-        # 3. Premium Category
+        # Premium Category
         df = df.withColumn(
             "premium_category",
             when(col("premium") < 15000, "LOW")
@@ -63,23 +63,20 @@ def process_curated_data():
 
         df.show()
 
-        #  ================= WRITE OUTPUT =================
-
+        # WRITE OUTPUT
         os.makedirs(CURATED_PATH, exist_ok=True)
 
         output_file = os.path.join(CURATED_PATH, "policy_curated.csv")
 
-        #  CONVERT BACK TO PANDAS (SAFE WRITE)
         df.toPandas().to_csv(output_file, index=False)
 
         logger.info(f"Curated data written to: {output_file}")
 
-    except Exception as e:
-        logger.error(f"Curated pipeline failed: {str(e)}")
-        raise
+        logger.info("Curated pipeline completed successfully")
 
-    finally:
-        logger.info("Curated pipeline completed")
+    except Exception as e:
+        handle_error(e, "curated layer")
+        raise
 
 
 if __name__ == "__main__":

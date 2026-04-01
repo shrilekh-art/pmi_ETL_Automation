@@ -5,6 +5,7 @@ from datetime import datetime
 
 from framework.spark_session import get_spark_session
 from framework.logger import get_logger
+from framework.error_handler import handle_error
 from utils.validation import *
 from utils.file_utils import get_latest_csv_file
 from pyspark.sql.functions import col, isnan
@@ -19,19 +20,23 @@ def load_df(path):
 
 
 def run_validations(config_path):
-    logger.info(f"Starting config-driven validation using: {config_path}")
-
-    with open(config_path) as f:
-        config = json.load(f)
-
-    results = []
 
     try:
+        logger.info("Validation started")
+
+        with open(config_path) as f:
+            config = json.load(f)
+
+        results = []
+
         raw_file = get_latest_csv_file(config["paths"]["raw"])
         staging_file = get_latest_csv_file(config["paths"]["staging"])
 
         logger.info(f"Raw file: {raw_file}")
         logger.info(f"Staging file: {staging_file}")
+
+        if not raw_file or not staging_file:
+            raise FileNotFoundError("Required input files not found")
 
         src = load_df(raw_file)
         tgt = load_df(staging_file)
@@ -42,7 +47,7 @@ def run_validations(config_path):
             try:
                 logger.info(f"Running validation: {validation_name}")
 
-                #  ROW COUNT
+                # ROW COUNT
                 if validation_name == "row_count":
                     raw_count = src.count()
 
@@ -83,16 +88,15 @@ def run_validations(config_path):
                     "timestamp": str(datetime.now())
                 })
 
-                raise  # stop execution
+                raise
 
-        # SAVE REPORT
         save_report(results)
 
-        logger.info("All validations passed")
+        logger.info("Validation completed successfully")
 
     except Exception as e:
         save_report(results)
-        logger.error("Validation execution failed")
+        handle_error(e, "validation runner")
         raise
 
 

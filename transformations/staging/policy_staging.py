@@ -3,10 +3,10 @@ from framework.spark_session import get_spark_session
 from framework.logger import get_logger
 import os
 
-# ✅ LOGGER INITIALIZATION (TOP LEVEL)
+# LOGGER INITIALIZATION (TOP LEVEL)
 logger = get_logger()
 
-# ✅ PROJECT ROOT PATH (ALREADY CORRECT)
+# PROJECT ROOT PATH (ALREADY CORRECT)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 RAW_PATH = os.path.join(BASE_DIR, "data", "raw")
@@ -21,72 +21,71 @@ def get_latest_file_path(base_path):
     return None
 
 
+from framework.error_handler import handle_error
+
+
 def process_policy_data():
 
-    # ✅ STEP 1 — START LOG (VERY IMPORTANT)
-    logger.info("Starting staging pipeline...")
+    try:
+        logger.info("Starting staging pipeline")
 
-    spark = get_spark_session()
+        spark = get_spark_session()
 
-    # ✅ STEP 2 — DEBUG LOGS (ADDED HERE 🔥)
-    logger.info(f"RAW PATH: {RAW_PATH}")
-    logger.info(f"STAGING PATH: {STAGING_PATH}")
+        logger.info(f"RAW PATH: {RAW_PATH}")
+        logger.info(f"STAGING PATH: {STAGING_PATH}")
 
-    file_path = get_latest_file_path(RAW_PATH)
+        file_path = get_latest_file_path(RAW_PATH)
 
-    # ✅ STEP 3 — FILE FOUND DEBUG (ADDED HERE 🔥)
-    logger.info(f"FILE FOUND: {file_path}")
+        logger.info(f"FILE FOUND: {file_path}")
 
-    if not file_path:
-        logger.error("No policy file found in raw layer")
-        return
+        if not file_path:
+            raise FileNotFoundError("No policy file found in raw layer")
 
-    logger.info(f"Reading file: {file_path}")
+        logger.info(f"Reading file: {file_path}")
 
-    df = spark.read.csv(file_path, header=True, inferSchema=True)
+        df = spark.read.csv(file_path, header=True, inferSchema=True)
 
-    # ✅ STEP 4 — VERIFY DATA READ (ADDED HERE 🔥)
-    logger.info("Showing sample data:")
-    df.show()
+        logger.info("Showing sample data:")
+        df.show()
 
-    logger.info("Printing schema:")
-    df.printSchema()
+        logger.info("Printing schema:")
+        df.printSchema()
 
-    logger.info("Applying transformations...")
+        logger.info("Applying transformations...")
 
-    # 🔹 Type Casting
-    df = df.withColumn("premium", col("premium").cast("double"))
+        # Type Casting
+        df = df.withColumn("premium", col("premium").cast("double"))
 
-    # 🔹 Null Handling
-    before_null = df.count()
-    df = df.dropna(subset=["policy_id", "customer_id", "premium"])
-    after_null = df.count()
+        # Null Handling
+        before_null = df.count()
+        df = df.dropna(subset=["policy_id", "customer_id", "premium"])
+        after_null = df.count()
 
-    logger.info(f"Rows before null removal: {before_null}")
-    logger.info(f"Rows after null removal: {after_null}")
+        logger.info(f"Rows before null removal: {before_null}")
+        logger.info(f"Rows after null removal: {after_null}")
 
-    # 🔹 Deduplication
-    before_dedup = df.count()
-    df = df.dropDuplicates(["policy_id"])
-    after_dedup = df.count()
+        # Deduplication
+        before_dedup = df.count()
+        df = df.dropDuplicates(["policy_id"])
+        after_dedup = df.count()
 
-    logger.info(f"Rows before dedup: {before_dedup}")
-    logger.info(f"Rows after dedup: {after_dedup}")
+        logger.info(f"Rows before dedup: {before_dedup}")
+        logger.info(f"Rows after dedup: {after_dedup}")
 
-    # ✅ STEP 5 — WRITE OUTPUT (UPDATED)
-    logger.info(f"Writing staging data to: {STAGING_PATH}")
+        # Write Output
+        logger.info(f"Writing staging data to: {STAGING_PATH}")
 
-    output_file = os.path.join(STAGING_PATH, "policy_output.csv")
+        output_file = os.path.join(STAGING_PATH, "policy_output.csv")
 
-    df.toPandas().to_csv(output_file, index=False)
+        df.toPandas().to_csv(output_file, index=False)
 
-    logger.info(f"Data written using Pandas to: {output_file}")
+        logger.info(f"Data written using Pandas to: {output_file}")
 
-    logger.info("Data written successfully")
+        logger.info("Staging pipeline completed successfully")
 
-    # ✅ FINAL LOG
-    logger.info("Staging pipeline completed successfully")
-
+    except Exception as e:
+        handle_error(e, "staging layer")
+        raise
 
 if __name__ == "__main__":
     process_policy_data()
