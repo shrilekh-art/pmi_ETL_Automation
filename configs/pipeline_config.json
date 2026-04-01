@@ -1,7 +1,29 @@
 {
-  "pipeline_name": "policy_pipeline",
-  "source_dir": "data/source",
-  "landing_dir": "data/raw",
-  "file_pattern": "policy_*.csv",
-  "validations": ["row_count", "null_check"]
+  "pipeline": "policy",
+
+  "paths": {
+    "raw": "data/raw",
+    "staging": "data/staging/policy",
+    "curated": "data/curated/policy"
+  },
+
+  "validations": [
+    {
+      "type": "row_count"
+    },
+    {
+      "type": "null_check",
+      "columns": ["policy_id", "customer_id", "premium"]
+    },
+    {
+      "type": "schema",
+      "expected_columns": [
+        "policy_id",
+        "customer_id",
+        "premium",
+        "status",
+        "issue_date"
+      ]
+    }
+  ]
 }

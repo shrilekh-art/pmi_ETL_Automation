@@ -1,0 +1,17 @@
+[
+    {
+        "validation": "row_count",
+        "status": "PASS",
+        "timestamp": "2026-04-01 13:21:24.473059"
+    },
+    {
+        "validation": "null_check",
+        "status": "PASS",
+        "timestamp": "2026-04-01 13:21:45.135999"
+    },
+    {
+        "validation": "schema",
+        "status": "PASS",
+        "timestamp": "2026-04-01 13:21:45.151649"
+    }
+]
